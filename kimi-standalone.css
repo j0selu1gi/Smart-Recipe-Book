@@ -1,0 +1,78 @@
+/* kimi-standalone.css — fallback theme for running this widget outside the Kimi Work
+   dashboard. Inside Kimi Work the host runtime injects its own design tokens, which
+   override these defaults because they load later. Standalone, these definitions give
+   the app a clean light theme and basic styling for the kimi-* helper classes. */
+
+:root {
+  --kimi-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --kimi-font-serif: ui-serif, Georgia, "Times New Roman", serif;
+
+  --kimi-space-1: 4px;
+  --kimi-space-2: 8px;
+  --kimi-space-3: 12px;
+  --kimi-space-4: 16px;
+  --kimi-space-5: 20px;
+  --kimi-space-6: 24px;
+
+  --kimi-color-text-primary: #1a1a1a;
+  --kimi-color-text-secondary: #4d4d4d;
+  --kimi-color-text-tertiary: #8a8a8a;
+  --kimi-color-text-quaternary: #c2c2c2;
+  --kimi-color-surface: #ffffff;
+  --kimi-color-surface-raised: #ffffff;
+  --kimi-color-surface-muted: #f4f4f4;
+  --kimi-color-border: #e2e2e2;
+  --kimi-color-accent: #4f6ef7;
+  --kimi-color-warning: #b8860b;
+  --kimi-color-danger: #d5483f;
+  --kimi-color-positive: #2e9e5b;
+
+  --kimi-chart-1: #4f6ef7;
+  --kimi-chart-2: #2e9e5b;
+  --kimi-chart-3: #e8a23c;
+  --kimi-chart-4: #d5483f;
+  --kimi-chart-5: #8a63d2;
+
+  --kimi-radius-chip: 999px;
+  --kimi-radius-panel: 10px;
+  --kimi-radius-button: 8px;
+  --kimi-radius-input: 8px;
+  --kimi-radius-full: 999px;
+
+  --t-fast: 150ms;
+  --ease-out: cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+html, body { background: var(--kimi-color-surface); }
+body { font-family: var(--kimi-font-sans); color: var(--kimi-color-text-primary); }
+
+/* kimi-* helper classes */
+.kimi-page-title { font-size: 20px; font-weight: 600; }
+.kimi-meta { font-size: 13px; color: var(--kimi-color-text-tertiary); margin-top: 2px; }
+.kimi-input, .kimi-select, .kimi-textarea {
+  font: inherit; font-size: 14px; color: var(--kimi-color-text-primary);
+  background: var(--kimi-color-surface); border: 1px solid var(--kimi-color-border);
+  border-radius: var(--kimi-radius-input); padding: 7px 10px; outline: none;
+}
+.kimi-input:focus, .kimi-select:focus, .kimi-textarea:focus { border-color: var(--kimi-color-text-tertiary); }
+.kimi-button {
+  font: inherit; font-size: 14px; cursor: pointer;
+  border: none; border-radius: var(--kimi-radius-button);
+  padding: 6px 14px; background: var(--kimi-color-text-primary); color: var(--kimi-color-surface);
+}
+.kimi-button:hover { opacity: 0.85; }
+.kimi-icon-button {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: var(--kimi-radius-button); cursor: pointer;
+  background: transparent; color: var(--kimi-color-text-secondary);
+}
+.kimi-icon-button:hover { background: var(--kimi-color-surface-muted); }
+.kimi-chip {
+  font-size: 13px; padding: 4px 12px; border-radius: var(--kimi-radius-chip);
+  border: 1px solid var(--kimi-color-border); background: transparent;
+  color: var(--kimi-color-text-secondary); cursor: pointer;
+}
+.kimi-chip.is-selected { background: var(--kimi-color-text-primary); color: var(--kimi-color-surface); border-color: var(--kimi-color-text-primary); }
+.kimi-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.kimi-table th, .kimi-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--kimi-color-border); }
+.kimi-table th { color: var(--kimi-color-text-tertiary); font-weight: 500; font-size: 12px; }

@@ -1,0 +1,375 @@
+{
+  "recipes": [
+    {
+      "id": "r-pb-ramen",
+      "title": "Peanut Butter Ramen",
+      "tags": [
+        "weeknight",
+        "fall",
+        "cozy",
+        "cold"
+      ],
+      "prepMin": 5,
+      "cookMin": 12,
+      "servings": 4,
+      "ingredients": [
+        {
+          "qty": 4,
+          "unit": "each",
+          "name": "ramen noodles",
+          "notes": "with seasoning packet",
+          "category": "pantry",
+          "preferredProduct": null
+        },
+        {
+          "qty": 2.5,
+          "unit": "each",
+          "name": "chicken broth",
+          "notes": "",
+          "category": "pantry",
+          "preferredProduct": null
+        },
+        {
+          "qty": 4,
+          "unit": "tbsp",
+          "name": "peanut butter",
+          "notes": "creamy",
+          "category": "pantry",
+          "preferredProduct": null
+        },
+        {
+          "qty": 2.67,
+          "unit": "tbsp",
+          "name": "soy sauce",
+          "notes": "",
+          "category": "pantry",
+          "preferredProduct": null
+        },
+        {
+          "qty": 12,
+          "unit": "clove",
+          "name": "garlic",
+          "notes": "minced",
+          "category": "produce",
+          "preferredProduct": null
+        },
+        {
+          "qty": 8,
+          "unit": "each",
+          "name": "green onions",
+          "notes": "chopped, plus more for topping",
+          "category": "produce",
+          "preferredProduct": null
+        },
+        {
+          "qty": 0.5,
+          "unit": "cup",
+          "name": "peanuts",
+          "notes": "crushed and toasted, for topping",
+          "category": "pantry",
+          "preferredProduct": null
+        },
+        {
+          "qty": 4,
+          "unit": "each",
+          "name": "egg",
+          "notes": "",
+          "category": "dairy & eggs",
+          "preferredProduct": null
+        },
+        {
+          "qty": 4,
+          "unit": "tbsp",
+          "name": "sesame seeds",
+          "notes": "",
+          "category": "pantry",
+          "preferredProduct": null
+        }
+      ],
+      "steps": [
+        "Bring the chicken broth to a simmer in a large pot.",
+        "Add the noodles and cook until just tender, 3–4 minutes.",
+        "Chop protein into small pieces and cook on a pan.",
+        "In a separate bowl, whisk in the peanut butter, soy sauce, half the garlic, one egg, and the ramen seasoning packets until smooth.",
+        "Stir in hot broth into the bowl mixture and stir constantly; cook 1 minute more.",
+        "Ladle cooked ramen noodles into bowls and then ladle the broth mixture and top with cooked protein, crushed toasted peanuts, sesame seeds, and the remaining green onions."
+      ]
+    },
+    {
+      "id": "r-tostadas",
+      "title": "Creamy Jalapeño Low Carb Tostadas",
+      "tags": [
+        "starters",
+        "low carb"
+      ],
+      "prepMin": 10,
+      "cookMin": 15,
+      "servings": 4,
+      "ingredients": [
+        {
+          "category": "bakery",
+          "name": "corn tortillas",
+          "notes": "white or blue",
+          "preferredProduct": null,
+          "qty": 8,
+          "unit": "each"
+        },
+        {
+          "category": "pantry",
+          "name": "olive oil",
+          "notes": "for frying",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "tbsp"
+        },
+        {
+          "category": "dairy & eggs",
+          "name": "nonfat plain Greek yogurt",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "cup"
+        },
+        {
+          "category": "pantry",
+          "name": "pickled jalapeños",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 0.5,
+          "unit": "can"
+        },
+        {
+          "category": "pantry",
+          "name": "pickled jalapeño can juice",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "tbsp"
+        },
+        {
+          "category": "produce",
+          "name": "fresh cilantro",
+          "notes": "small handful for the sauce, plus more for topping",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "bunch"
+        },
+        {
+          "category": "pantry",
+          "name": "Better Than Bouillon",
+          "notes": "2–3 tbsp",
+          "preferredProduct": null,
+          "qty": 2.5,
+          "unit": "tbsp"
+        },
+        {
+          "category": "meat & seafood",
+          "name": "shredded chicken breast",
+          "notes": "cooked",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "lb"
+        },
+        {
+          "category": "dairy & eggs",
+          "name": "queso fresco",
+          "notes": "for topping",
+          "preferredProduct": null,
+          "qty": 4,
+          "unit": "oz"
+        },
+        {
+          "category": "produce",
+          "name": "avocado",
+          "notes": "sliced, for topping",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "each"
+        }
+      ],
+      "steps": [
+        "Fry the corn tortillas in olive oil until crisp and golden; drain on paper towels.",
+        "Blend the Greek yogurt, pickled jalapeños with 2 tbsp of the pickled can juice, a small handful of fresh cilantro, and 2–3 tbsp of Better Than Bouillon until smooth.",
+        "Mix the sauce into the shredded chicken breast.",
+        "Top the fried tortillas with the chicken mixture, queso fresco, cilantro, and avocado slices."
+      ]
+    },
+    {
+      "id": "r-red-curry-beef",
+      "title": "Red Curry Beef",
+      "tags": [
+        "curry",
+        "comfort food",
+        "cozy"
+      ],
+      "prepMin": 20,
+      "cookMin": 130,
+      "servings": 8,
+      "ingredients": [
+        {
+          "category": "meat & seafood",
+          "name": "chuck roast",
+          "notes": "fat trimmed",
+          "preferredProduct": null,
+          "qty": 3,
+          "unit": "lb"
+        },
+        {
+          "category": "spices & baking",
+          "name": "kosher salt",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "tbsp"
+        },
+        {
+          "category": "spices & baking",
+          "name": "black pepper",
+          "notes": "freshly cracked",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "tsp"
+        },
+        {
+          "category": "pantry",
+          "name": "olive oil",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "tbsp"
+        },
+        {
+          "category": "pantry",
+          "name": "coconut milk",
+          "notes": "13.5 oz each, full fat, shaken",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "can"
+        },
+        {
+          "category": "pantry",
+          "name": "beef stock",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "cup"
+        },
+        {
+          "category": "pantry",
+          "name": "red curry paste",
+          "notes": "e.g. Mae Ploy or Aroy-D",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "tbsp"
+        },
+        {
+          "category": "produce",
+          "name": "lime zest",
+          "notes": "",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "tsp"
+        },
+        {
+          "category": "produce",
+          "name": "lime juice",
+          "notes": "from 1 lime",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "tbsp"
+        },
+        {
+          "category": "produce",
+          "name": "yellow onion",
+          "notes": "small, thinly sliced",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "each"
+        },
+        {
+          "category": "produce",
+          "name": "garlic",
+          "notes": "thinly sliced",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "clove"
+        },
+        {
+          "category": "produce",
+          "name": "lemongrass",
+          "notes": "6-inch piece, smashed, cut into 1-inch slices (optional)",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "each"
+        },
+        {
+          "category": "produce",
+          "name": "fresh ginger",
+          "notes": "1-inch piece, peeled, thinly sliced",
+          "preferredProduct": null,
+          "qty": 1,
+          "unit": "each"
+        },
+        {
+          "category": "produce",
+          "name": "sweet potato",
+          "notes": "cubed, about 2 lb",
+          "preferredProduct": null,
+          "qty": 4,
+          "unit": "cup"
+        },
+        {
+          "category": "produce",
+          "name": "red bell peppers",
+          "notes": "cut into ½-inch-thick strips",
+          "preferredProduct": null,
+          "qty": 2,
+          "unit": "each"
+        },
+        {
+          "category": "pantry",
+          "name": "cooked rice",
+          "notes": "for serving (optional)",
+          "preferredProduct": null,
+          "qty": 8,
+          "unit": "each"
+        }
+      ],
+      "steps": [
+        "Preheat the oven to 350°F with a rack in the center position.",
+        "Season the beef all over with the salt and pepper. Heat the olive oil in a Dutch oven over medium-high heat. Once the oil is glistening, add the meat and cook until browned all over, about 5 minutes per side. Transfer the beef to a plate.",
+        "Set aside 1 cup of the coconut milk for later. To the Dutch oven, add the remaining coconut milk, 1 cup of the beef stock, the red curry paste, lime zest, lime juice, onion, garlic, lemongrass, and ginger. Whisk to combine. Bring to a simmer, then return the meat to the pot along with any collected juices, nestling it into the liquid. Cover and transfer to the oven. Cook for about 2–2½ hours, until the meat is very tender. Transfer the meat to a plate and shred with two forks, discarding any large pieces of fat.",
+        "Return the shredded beef to the curry. Add the remaining 1 cup beef stock, the reserved 1 cup coconut milk, sweet potato, and bell pepper. Bring to a boil, then reduce the heat to medium-low and simmer until the sweet potato is tender, about 20 minutes.",
+        "Serve the curry spooned over cooked rice if using. Top with cilantro, Thai basil, and Thai chilies if desired.",
+        "No oven? This also works in a slow cooker (about 6 hours) or an Instant Pot (90 minutes) — see themodernproper.com/red-curry-beef for those variations."
+      ]
+    }
+  ],
+  "staples": [
+    "salt",
+    "black pepper",
+    "olive oil",
+    "chili powder",
+    "cumin",
+    "garlic powder",
+    "all-purpose flour",
+    "sugar",
+    "honey",
+    "soy sauce"
+  ],
+  "cookList": [
+    {
+      "id": "r-pb-ramen",
+      "servings": 4
+    },
+    {
+      "id": "r-tostadas",
+      "servings": 4
+    },
+    {
+      "id": "r-red-curry-beef",
+      "servings": 8
+    }
+  ],
+  "updatedAt": "2026-10-20T20:16:49.292Z"
+}

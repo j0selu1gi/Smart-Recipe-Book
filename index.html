@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recipe Book</title>
+<link rel="stylesheet" href="kimi-standalone.css">
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; }
+  .wrap {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--kimi-font-sans);
+    color: var(--kimi-color-text-primary);
+    padding-block-start: var(--kimi-space-4);
+    padding-inline: var(--kimi-space-4);
+    padding-block-end: var(--kimi-space-3);
+    gap: var(--kimi-space-3);
+  }
+  button, input, select, textarea { font: inherit; }
+
+  /* Header — non-interactive; Canvas drag strip overlays the top edge */
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--kimi-space-3); min-height: 40px; }
+  .wordmark { font-family: var(--kimi-font-serif); font-size: 20px; font-weight: 500; }
+  .wordmark small { font-family: var(--kimi-font-sans); font-size: 12px; color: var(--kimi-color-text-tertiary); margin-left: var(--kimi-space-2); letter-spacing: 0.02em; }
+  .save-status { font-size: 12px; color: var(--kimi-color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .save-status.dirty { color: var(--kimi-color-warning); }
+  .save-status.error { color: var(--kimi-color-danger); }
+
+  .tabs { display: flex; gap: var(--kimi-space-1); border-bottom: 0.5px solid var(--kimi-color-border); padding-bottom: var(--kimi-space-2); }
+  .tab {
+    border: none; background: transparent; cursor: pointer;
+    padding: 4px 10px; border-radius: var(--kimi-radius-chip);
+    font-size: 14px; color: var(--kimi-color-text-secondary);
+    transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+  }
+  .tab:hover { background: var(--kimi-color-surface-muted); }
+  .tab.is-selected { color: var(--kimi-color-text-primary); background: var(--kimi-color-surface-muted); font-weight: 500; }
+  .tab .count { font-size: 12px; color: var(--kimi-color-text-tertiary); margin-left: 2px; }
+
+  .view { flex: 1; min-height: 0; overflow-y: auto; display: none; }
+  .view.active { display: block; }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--kimi-space-2); margin-bottom: var(--kimi-space-3); }
+  .toolbar .spacer { flex: 1; }
+  .search { min-width: 220px; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: var(--kimi-space-1); margin-bottom: var(--kimi-space-3); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--kimi-space-3); }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .card { border: 0.5px solid var(--kimi-color-border); border-radius: var(--kimi-radius-panel); padding: var(--kimi-space-3); cursor: pointer; position: relative; transition: border-color var(--t-fast) var(--ease-out); }
+  .card:hover { border-color: var(--kimi-color-text-quaternary); }
+  .card.selected { border-color: var(--kimi-color-text-primary); }
+  .card-title { font-size: 15px; font-weight: 500; margin-bottom: 2px; padding-right: 28px; }
+  .card-meta { font-size: 12px; color: var(--kimi-color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: var(--kimi-space-1); margin-top: var(--kimi-space-2); }
+  .card-actions { position: absolute; top: 8px; right: 36px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--t-fast) var(--ease-out); }
+  .card:hover .card-actions, .card:focus-within .card-actions { opacity: 1; }
+
+  .cook-toggle {
+    position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
+    border-radius: var(--kimi-radius-full); border: 1px solid var(--kimi-color-border);
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--kimi-color-text-tertiary); padding: 0;
+  }
+  .card.selected .cook-toggle { background: var(--kimi-color-text-primary); color: var(--kimi-color-surface); border-color: var(--kimi-color-text-primary); }
+  .card:hover .cook-toggle { z-index: 1; }
+
+  .confirm-bar {
+    position: absolute; top: 34px; left: 8px; right: 8px; z-index: 3;
+    display: flex; align-items: center; gap: var(--kimi-space-2);
+    padding: 6px 8px; border: 0.5px solid var(--kimi-color-border);
+    border-radius: var(--kimi-radius-panel); background: var(--kimi-color-surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10); font-size: 12px;
+  }
+  .confirm-bar .confirm-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--kimi-color-text-secondary); }
+  .confirm-bar .kimi-button { padding: 2px 10px; font-size: 12px; flex: none; }
+
+  .chip-tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: var(--kimi-radius-full); color: var(--kimi-color-text-secondary); background: var(--kimi-color-surface-muted); white-space: nowrap; }
+
+  .section-title { font-size: 17px; font-weight: 500; margin: var(--kimi-space-3) 0 var(--kimi-space-2); }
+  .section-title:first-child { margin-top: 0; }
+
+  .panel { border: 0.5px solid var(--kimi-color-border); border-radius: var(--kimi-radius-panel); padding: var(--kimi-space-3); }
+
+  .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kimi-space-3); flex-wrap: wrap; }
+  .detail-title { font-family: var(--kimi-font-serif); font-size: 20px; font-weight: 500; }
+  .detail-meta { font-size: 14px; color: var(--kimi-color-text-secondary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--kimi-space-4); margin-top: var(--kimi-space-3); }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .ing-row { display: flex; align-items: baseline; gap: var(--kimi-space-2); padding: 6px 0; border-bottom: 0.5px solid var(--kimi-color-border); font-size: 14px; }
+  .ing-row:last-child { border-bottom: none; }
+  .ing-qty { flex: none; min-width: 84px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .ing-name { flex: 1; }
+  .ing-notes { font-size: 12px; color: var(--kimi-color-text-tertiary); }
+
+  .step-row { display: flex; gap: var(--kimi-space-3); padding: var(--kimi-space-2) 0; border-bottom: 0.5px solid var(--kimi-color-border); font-size: 14px; line-height: 1.5; }
+  .step-row:last-child { border-bottom: none; }
+  .step-num { flex: none; width: 22px; height: 22px; border-radius: var(--kimi-radius-full); background: var(--kimi-color-surface-muted); color: var(--kimi-color-text-secondary); font-size: 12px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+  .stepper { display: inline-flex; align-items: center; gap: var(--kimi-space-2); }
+  .stepper button { width: 26px; height: 26px; border-radius: var(--kimi-radius-button); border: 0.5px solid var(--kimi-color-border); background: transparent; color: var(--kimi-color-text-primary); cursor: pointer; font-size: 15px; line-height: 1; }
+  .stepper button:hover { background: var(--kimi-color-surface-muted); }
+  .stepper .val { min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--kimi-space-3); }
+  .form-grid .wide { grid-column: 1 / -1; }
+  .form-grid .half { grid-column: span 2; }
+  @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr 1fr; } .form-grid .half { grid-column: 1 / -1; } }
+  .f-label { display: block; font-size: 12px; color: var(--kimi-color-text-tertiary); margin-bottom: 4px; }
+
+  .edit-ing { display: grid; grid-template-columns: 70px 110px 1fr 1fr 150px 30px; gap: var(--kimi-space-2); margin-bottom: var(--kimi-space-2); align-items: center; }
+  @media (max-width: 800px) { .edit-ing { grid-template-columns: 60px 90px 1fr 30px; } .edit-ing .opt { display: none; } }
+
+  .staple-row { display: flex; align-items: center; gap: var(--kimi-space-2); padding: 6px 0; border-bottom: 0.5px solid var(--kimi-color-border); font-size: 14px; }
+  .staple-row:last-child { border-bottom: none; }
+  .staple-row .name { flex: 1; }
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity var(--t-fast) var(--ease-out); }
+  .staple-row:hover .row-actions, .staple-row:focus-within .row-actions { opacity: 1; }
+
+  .aisle { margin-bottom: var(--kimi-space-3); }
+  .aisle-title { font-size: 12px; color: var(--kimi-color-text-tertiary); text-transform: none; margin-bottom: 2px; letter-spacing: 0.04em; }
+  .shop-row { display: flex; align-items: baseline; gap: var(--kimi-space-2); padding: 6px 0; border-bottom: 0.5px solid var(--kimi-color-border); font-size: 14px; }
+  .shop-row:last-child { border-bottom: none; }
+  .shop-row input[type="checkbox"] { accent-color: var(--kimi-color-text-primary); margin-top: 2px; }
+  .shop-row.unchecked .shop-name { color: var(--kimi-color-text-tertiary); text-decoration: line-through; }
+  .shop-qty { flex: none; min-width: 84px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .shop-name { flex: 1; }
+  .staple-mark { font-size: 12px; color: var(--kimi-color-text-quaternary); }
+
+  .cook-src { display: flex; align-items: center; gap: var(--kimi-space-2); padding: var(--kimi-space-2) 0; border-bottom: 0.5px solid var(--kimi-color-border); font-size: 14px; }
+  .cook-src .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .empty { padding: var(--kimi-space-6) var(--kimi-space-3); text-align: center; color: var(--kimi-color-text-tertiary); font-size: 14px; }
+
+  .json-preview { font-family: var(--kimi-font-mono); font-size: 12px; line-height: 1.5; background: var(--kimi-color-surface-muted); border-radius: var(--kimi-radius-input); padding: var(--kimi-space-3); overflow: auto; max-height: 240px; white-space: pre; margin-top: var(--kimi-space-2); }
+
+  .cook-overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--kimi-color-surface);
+    display: flex; flex-direction: column;
+    padding: var(--kimi-space-5);
+    font-family: var(--kimi-font-sans); color: var(--kimi-color-text-primary);
+  }
+  .cook-overlay[hidden] { display: none; }
+  .cook-top { display: flex; align-items: center; justify-content: space-between; gap: var(--kimi-space-3); }
+  .cook-title { font-size: 14px; color: var(--kimi-color-text-secondary); }
+  .cook-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: var(--kimi-space-4); min-height: 0; overflow-y: auto; }
+  .cook-step-num { font-size: 14px; color: var(--kimi-color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .cook-step-text { font-size: 30px; line-height: 1.4; font-weight: 500; max-width: 640px; }
+  .cook-nav { display: flex; gap: var(--kimi-space-3); justify-content: center; }
+  .cook-progress { height: 3px; background: var(--kimi-color-surface-muted); border-radius: var(--kimi-radius-full); overflow: hidden; }
+  .cook-progress > div { height: 100%; background: var(--kimi-color-text-primary); transition: width var(--t-normal) var(--ease-standard); }
+
+  .hint { font-size: 12px; color: var(--kimi-color-text-tertiary); margin-top: var(--kimi-space-2); line-height: 1.5; }
+  .btn-row { display: flex; gap: var(--kimi-space-2); flex-wrap: wrap; margin-top: var(--kimi-space-3); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="head">
+    <div class="wordmark">Recipe Book <small id="bookStats"></small></div>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Recipe book views">
+    <button class="tab is-selected" data-view="recipes" role="tab" aria-selected="true">Recipes</button>
+    <button class="tab" data-view="pantry" role="tab" aria-selected="false">Pantry staples</button>
+    <button class="tab" data-view="shopping" role="tab" aria-selected="false">Shopping list <span class="count" id="cookCount"></span></button>
+  </div>
+
+  <div class="view active" id="view-recipes">
+    <div class="toolbar">
+      <input class="kimi-input search" id="searchInput" type="search" placeholder="Search recipes or ingredients" aria-label="Search recipes">
+      <select class="kimi-select" id="tagFilter" aria-label="Filter by tag"><option value="">All tags</option></select>
+      <div class="spacer"></div>
+      <button class="kimi-button kimi-button--ghost" id="importBtn">Import</button>
+      <button class="kimi-button kimi-button--ghost" id="exportBtn">Export</button>
+      <button class="kimi-button kimi-button--primary" id="newRecipeBtn">New recipe</button>
+    </div>
+    <div id="recipeGrid" class="grid"></div>
+  </div>
+
+  <div class="view" id="view-detail"></div>
+  <div class="view" id="view-edit"></div>
+
+  <div class="view" id="view-pantry">
+    <div class="toolbar">
+      <input class="kimi-input" id="stapleInput" type="text" placeholder="Add a staple, e.g. olive oil" aria-label="New pantry staple">
+      <button class="kimi-button kimi-button--secondary" id="addStapleBtn">Add</button>
+    </div>
+    <div class="hint">Staples are unchecked by default on the shopping list — tick them only when you actually need to restock.</div>
+    <div id="pantryList" style="margin-top: var(--kimi-space-3);"></div>
+  </div>
+
+  <div class="view" id="view-shopping"></div>
+</div>
+
+<div class="cook-overlay" id="cookOverlay" hidden></div>
+
+<script>
+(function () {
+'use strict';
+
+// ---------- Sample data (used until the first saved state arrives) ----------
+const FALLBACK = {
+  recipes: [
+    {
+      id: 'r-pb-ramen', title: 'Peanut Butter Ramen', tags: ['weeknight', 'fall', 'cozy', 'cold'],
+      prepMin: 5, cookMin: 12, servings: 4,
+      ingredients: [
+        { qty: 4, unit: 'each', name: 'ramen noodles', notes: 'with seasoning packet', category: 'pantry', preferredProduct: null },
+        { qty: 2.5, unit: 'each', name: 'chicken broth', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 4, unit: 'tbsp', name: 'peanut butter', notes: 'creamy', category: 'pantry', preferredProduct: null },
+        { qty: 2.67, unit: 'tbsp', name: 'soy sauce', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 12, unit: 'clove', name: 'garlic', notes: 'minced', category: 'produce', preferredProduct: null },
+        { qty: 8, unit: 'each', name: 'green onions', notes: 'chopped, plus more for topping', category: 'produce', preferredProduct: null },
+        { qty: 0.5, unit: 'cup', name: 'peanuts', notes: 'crushed and toasted, for topping', category: 'pantry', preferredProduct: null },
+        { qty: 4, unit: 'each', name: 'egg', notes: '', category: 'dairy & eggs', preferredProduct: null },
+        { qty: 4, unit: 'tbsp', name: 'sesame seeds', notes: '', category: 'pantry', preferredProduct: null }
+      ],
+      steps: [
+        'Bring the chicken broth to a simmer in a large pot.',
+        'Add the noodles and cook until just tender, 3–4 minutes.',
+        'Chop protein into small pieces and cook on a pan.',
+        'In a separate bowl, whisk in the peanut butter, soy sauce, half the garlic, one egg, and the ramen seasoning packets until smooth.',
+        'Stir in hot broth into the bowl mixture and stir constantly; cook 1 minute more.',
+        'Ladle cooked ramen noodles into bowls and then ladle the broth mixture and top with cooked protein, crushed toasted peanuts, sesame seeds, and the remaining green onions.'
+      ]
+    },
+    {
+      id: 'r-tostadas', title: 'Creamy Jalapeño Low Carb Tostadas', tags: ['starters', 'low carb'],
+      prepMin: 10, cookMin: 15, servings: 4,
+      ingredients: [
+        { qty: 8, unit: 'each', name: 'corn tortillas', notes: 'white or blue', category: 'bakery', preferredProduct: null },
+        { qty: 2, unit: 'tbsp', name: 'olive oil', notes: 'for frying', category: 'pantry', preferredProduct: null },
+        { qty: 1, unit: 'cup', name: 'nonfat plain Greek yogurt', notes: '', category: 'dairy & eggs', preferredProduct: null },
+        { qty: 0.5, unit: 'can', name: 'pickled jalapeños', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 2, unit: 'tbsp', name: 'pickled jalapeño can juice', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 1, unit: 'bunch', name: 'fresh cilantro', notes: 'small handful for the sauce, plus more for topping', category: 'produce', preferredProduct: null },
+        { qty: 2.5, unit: 'tbsp', name: 'Better Than Bouillon', notes: '2–3 tbsp', category: 'pantry', preferredProduct: null },
+        { qty: 1, unit: 'lb', name: 'shredded chicken breast', notes: 'cooked', category: 'meat & seafood', preferredProduct: null },
+        { qty: 4, unit: 'oz', name: 'queso fresco', notes: 'for topping', category: 'dairy & eggs', preferredProduct: null },
+        { qty: 2, unit: 'each', name: 'avocado', notes: 'sliced, for topping', category: 'produce', preferredProduct: null }
+      ],
+      steps: [
+        'Fry the corn tortillas in olive oil until crisp and golden; drain on paper towels.',
+        'Blend the Greek yogurt, pickled jalapeños with 2 tbsp of the pickled can juice, a small handful of fresh cilantro, and 2–3 tbsp of Better Than Bouillon until smooth.',
+        'Mix the sauce into the shredded chicken breast.',
+        'Top the fried tortillas with the chicken mixture, queso fresco, cilantro, and avocado slices.'
+      ]
+    },
+    {
+      id: 'r-red-curry-beef', title: 'Red Curry Beef', tags: ['curry', 'comfort food', 'cozy'],
+      prepMin: 20, cookMin: 130, servings: 8,
+      ingredients: [
+        { qty: 3, unit: 'lb', name: 'chuck roast', notes: 'fat trimmed', category: 'meat & seafood', preferredProduct: null },
+        { qty: 1, unit: 'tbsp', name: 'kosher salt', notes: '', category: 'spices & baking', preferredProduct: null },
+        { qty: 1, unit: 'tsp', name: 'black pepper', notes: 'freshly cracked', category: 'spices & baking', preferredProduct: null },
+        { qty: 1, unit: 'tbsp', name: 'olive oil', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 2, unit: 'can', name: 'coconut milk', notes: '13.5 oz each, full fat, shaken', category: 'pantry', preferredProduct: null },
+        { qty: 2, unit: 'cup', name: 'beef stock', notes: '', category: 'pantry', preferredProduct: null },
+        { qty: 2, unit: 'tbsp', name: 'red curry paste', notes: 'e.g. Mae Ploy or Aroy-D', category: 'pantry', preferredProduct: null },
+        { qty: 1, unit: 'tsp', name: 'lime zest', notes: '', category: 'produce', preferredProduct: null },
+        { qty: 1, unit: 'tbsp', name: 'lime juice', notes: 'from 1 lime', category: 'produce', preferredProduct: null },
+        { qty: 1, unit: 'each', name: 'yellow onion', notes: 'small, thinly sliced', category: 'produce', preferredProduct: null },
+        { qty: 2, unit: 'clove', name: 'garlic', notes: 'thinly sliced', category: 'produce', preferredProduct: null },
+        { qty: 1, unit: 'each', name: 'lemongrass', notes: '6-inch piece, smashed, cut into 1-inch slices (optional)', category: 'produce', preferredProduct: null },
+        { qty: 1, unit: 'each', name: 'fresh ginger', notes: '1-inch piece, peeled, thinly sliced', category: 'produce', preferredProduct: null },
+        { qty: 4, unit: 'cup', name: 'sweet potato', notes: 'cubed, about 2 lb', category: 'produce', preferredProduct: null },
+        { qty: 2, unit: 'each', name: 'red bell peppers', notes: 'cut into ½-inch-thick strips', category: 'produce', preferredProduct: null },
+        { qty: 8, unit: 'each', name: 'cooked rice', notes: 'for serving (optional)', category: 'pantry', preferredProduct: null }
+      ],
+      steps: [
+        'Preheat the oven to 350°F with a rack in the center position.',
+        'Season the beef all over with the salt and pepper. Heat the olive oil in a Dutch oven over medium-high heat. Once the oil is glistening, add the meat and cook until browned all over, about 5 minutes per side. Transfer the beef to a plate.',
+        'Set aside 1 cup of the coconut milk for later. To the Dutch oven, add the remaining coconut milk, 1 cup of the beef stock, the red curry paste, lime zest, lime juice, onion, garlic, lemongrass, and ginger. Whisk to combine. Bring to a simmer, then return the meat to the pot along with any collected juices, nestling it into the liquid. Cover and transfer to the oven. Cook for about 2–2½ hours, until the meat is very tender. Transfer the meat to a plate and shred with two forks, discarding any large pieces of fat.',
+        'Return the shredded beef to the curry. Add the remaining 1 cup beef stock, the reserved 1 cup coconut milk, sweet potato, and bell pepper. Bring to a boil, then reduce the heat to medium-low and simmer until the sweet potato is tender, about 20 minutes.',
+        'Serve the curry spooned over cooked rice if using. Top with cilantro, Thai basil, and Thai chilies if desired.',
+        'No oven? This also works in a slow cooker (about 6 hours) or an Instant Pot (90 minutes) — see themodernproper.com/red-curry-beef for those variations.'
+      ]
+    }
+  ],
+  staples: ['salt', 'black pepper', 'olive oil', 'chili powder', 'cumin', 'garlic powder', 'all-purpose flour', 'sugar', 'honey', 'soy sauce'],
+  cookList: []
+};
+
+const AISLES = ['produce', 'meat & seafood', 'dairy & eggs', 'bakery', 'frozen', 'pantry', 'spices & baking', 'other'];
+const UNITS = ['each', 'tsp', 'tbsp', 'cup', 'fl oz', 'oz', 'lb', 'pinch', 'clove', 'can', 'bunch', 'pkg'];
+const VOL = { 'tsp': 1, 'tbsp': 3, 'fl oz': 6, 'cup': 48 };
+const WT = { 'oz': 1, 'lb': 16 };
+
+// ---------- Helpers ----------
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => 'r-' + Math.random().toString(36).slice(2, 9);
+const round2 = n => Math.round(n * 100) / 100;
+
+function fmtQty(n) {
+  if (n == null || isNaN(n)) return '';
+  const r = Math.round(n * 100) / 100;
+  if (r === 0) return '0';
+  const whole = Math.floor(r);
+  const frac = r - whole;
+  const fr = [[0.25, '¼'], [0.33, '⅓'], [0.5, '½'], [0.67, '⅔'], [0.75, '¾']];
+  for (const [v, s] of fr) { if (Math.abs(frac - v) < 0.02) return whole ? whole + ' ' + s : s; }
+  return String(r);
+}
+const fmtTime = r => {
+  const parts = [];
+  if (r.prepMin) parts.push(r.prepMin + ' min prep');
+  if (r.cookMin) parts.push(r.cookMin + ' min cook');
+  return parts.join(' · ');
+};
+
+function isStaple(name) {
+  const n = String(name || '').toLowerCase();
+  return state.staples.some(s => { s = s.toLowerCase(); return n.indexOf(s) !== -1 || s.indexOf(n) !== -1; });
+}
+
+// ---------- Host wiring (everything guarded for the delivery smoke host) ----------
+const host = (typeof window !== 'undefined' && window.DaimonWidget) || null;
+const canEmit = !!(host && typeof host.emit === 'function');
+const canFiles = !!(host && host.files && typeof host.files.writeText === 'function');
+
+let state = { recipes: FALLBACK.recipes, staples: FALLBACK.staples, cookList: [] };
+let lastPersistedKey = '';
+let dirty = false;
+let saveTimer = null;
+let seeded = false;
+
+const keyOf = o => JSON.stringify({ r: o.recipes || [], s: o.staples || [], c: o.cookList || [] });
+
+function setSaveStatus(text, cls) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'save-status' + (cls ? ' ' + cls : '');
+}
+
+function markDirty() {
+  dirty = true;
+  setSaveStatus('Unsaved changes', 'dirty');
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 1200);
+}
+
+function persist() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!dirty) return;
+  dirty = false;
+  lastPersistedKey = keyOf(state);
+  if (canEmit) {
+    setSaveStatus('Saving…');
+    try {
+      if (typeof host.saveInput === 'function') host.saveInput({ recipes: state.recipes, staples: state.staples, cookList: state.cookList });
+      host.emit('submit', { recipes: state.recipes, staples: state.staples, cookList: state.cookList });
+    } catch (e) { setSaveStatus('Save failed', 'error'); }
+  } else {
+    setSaveStatus('Local only');
+  }
+  if (canFiles) {
+    try {
+      host.files.writeText('workspace/recipe-book-state.json',
+        JSON.stringify({ recipes: state.recipes, staples: state.staples, cookList: state.cookList, updatedAt: new Date().toISOString() }, null, 2)
+      ).catch(function () {});
+    } catch (e) {}
+  }
+}
+
+function adoptIncoming(main) {
+  if (!main || !Array.isArray(main.recipes)) {
+    // No saved state yet — seed the store once with the samples.
+    if (canEmit && !seeded) { seeded = true; dirty = true; persist(); }
+    return;
+  }
+  const incoming = { recipes: main.recipes, staples: Array.isArray(main.staples) ? main.staples : [], cookList: Array.isArray(main.cookList) ? main.cookList : [] };
+  const k = keyOf(incoming);
+  if (k !== lastPersistedKey && k !== keyOf(state)) {
+    state = incoming;
+    lastPersistedKey = k;
+    renderAll();
+  }
+  if (!dirty) {
+    const t = main.updatedAt ? new Date(main.updatedAt) : null;
+    setSaveStatus(t && !isNaN(t) ? 'Saved · ' + t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Saved');
+  }
+}
+
+// ---------- UI state ----------
+let activeTab = 'recipes';       // recipes | pantry | shopping
+let subView = null;              // null | {kind:'detail'|'edit', id}
+let detailServings = {};         // recipeId -> servings override
+let cookSel = {};                // recipeId -> servings (recipes on the cook list)
+let shopChecks = {};             // "name|unit" -> checked
+let shopJson = '';               // last exported shopping list
+let query = '';
+let tagFilter = '';
+let editingId = null;
+
+function syncCookSel() {
+  cookSel = {};
+  (state.cookList || []).forEach(e => { if (e && e.id) cookSel[e.id] = e.servings || (recipeById(e.id) || {}).servings || 1; });
+}
+function recipeById(id) { return state.recipes.find(r => r.id === id); }
+function pushCookList() {
+  state.cookList = Object.keys(cookSel).map(id => ({ id: id, servings: cookSel[id] })).filter(e => recipeById(e.id));
+}
+
+// ---------- Scaling / merging ----------
+function scaleUnit(t, kind) {
+  if (kind === 'vol') {
+    if (t >= 48) return [round2(t / 48), 'cup'];
+    if (t >= 9) return [round2(t / 3), 'tbsp'];
+    return [round2(t), 'tsp'];
+  }
+  if (t >= 16) return [round2(t / 16), 'lb'];
+  return [round2(t), 'oz'];
+}
+
+function mergedItems() {
+  const map = new Map();
+  Object.keys(cookSel).forEach(id => {
+    const r = recipeById(id); if (!r) return;
+    const f = (cookSel[id] || r.servings || 1) / (r.servings || 1);
+    (r.ingredients || []).forEach(ing => {
+      const name = String(ing.name || '').trim(); if (!name) return;
+      const key = name.toLowerCase();
+      if (!map.has(key)) map.set(key, { name: name, category: ing.category || 'other', preferred: ing.preferredProduct || null, parts: [] });
+      map.get(key).parts.push({ qty: (ing.qty || 0) * f, unit: String(ing.unit || 'each').toLowerCase(), notes: ing.notes || '' });
+    });
+  });
+  const items = [];
+  map.forEach(g => {
+    const fam = u => VOL[u] ? 'vol' : WT[u] ? 'wt' : (u === 'each' || u === '') ? 'count' : 'x:' + u;
+    const fams = Array.from(new Set(g.parts.map(p => fam(p.unit))));
+    let lines = [];
+    if (fams.length === 1) {
+      const f0 = fams[0];
+      if (f0 === 'vol') lines = [scaleUnit(g.parts.reduce((s, p) => s + p.qty * VOL[p.unit], 0), 'vol')];
+      else if (f0 === 'wt') lines = [scaleUnit(g.parts.reduce((s, p) => s + p.qty * WT[p.unit], 0), 'wt')];
+      else lines = [[round2(g.parts.reduce((s, p) => s + p.qty, 0)), g.parts[0].unit]];
+    } else {
+      lines = g.parts.map(p => [round2(p.qty), p.unit]);
+    }
+    lines.forEach(L => items.push({
+      ingredient: g.name, quantity: L[0], unit: L[1],
+      notes: g.parts.map(p => p.notes).filter(Boolean).join('; ') || null,
+      category: g.category, is_staple: isStaple(g.name), preferred_product: g.preferred
+    }));
+  });
+  return items;
+}
+
+function shopKey(it) { return it.ingredient.toLowerCase() + '|' + it.unit; }
+
+// ---------- Render: header / tabs ----------
+function renderStats() {
+  const el = document.getElementById('bookStats');
+  if (el) el.textContent = state.recipes.length + ' recipes · ' + state.staples.length + ' staples';
+  const cc = document.getElementById('cookCount');
+  if (cc) cc.textContent = Object.keys(cookSel).length ? '(' + Object.keys(cookSel).length + ')' : '';
+  const tf = document.getElementById('tagFilter');
+  if (tf) {
+    const tags = Array.from(new Set([].concat.apply([], state.recipes.map(r => r.tags || [])))).sort();
+    const cur = tf.value;
+    tf.innerHTML = '<option value="">All tags</option>' + tags.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+    tf.value = tags.indexOf(cur) !== -1 ? cur : '';
+    tagFilter = tf.value;
+  }
+}
+
+// ---------- Render: recipe cards ----------
+function renderRecipes() {
+  const grid = document.getElementById('recipeGrid');
+  if (!grid) return;
+  const q = query.toLowerCase();
+  const list = state.recipes.filter(r => {
+    if (tagFilter && (r.tags || []).indexOf(tagFilter) === -1) return false;
+    if (!q) return true;
+    const hay = (r.title + ' ' + (r.tags || []).join(' ') + ' ' + (r.ingredients || []).map(i => i.name).join(' ')).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">' +
+      (state.recipes.length ? 'No recipes match your search.' : 'No recipes yet — hit “New recipe” to add your first.') + '</div>';
+    return;
+  }
+  grid.innerHTML = list.map(r => {
+    const sel = cookSel[r.id] != null;
+    return '<div class="card' + (sel ? ' selected' : '') + '" data-id="' + esc(r.id) + '" tabindex="0" role="button" aria-label="' + esc(r.title) + '">' +
+      '<button class="cook-toggle" data-act="togglecook" title="' + (sel ? 'Remove from cook list' : 'Add to cook list') + '" aria-pressed="' + sel + '">' + (sel ? '✓' : '+') + '</button>' +
+      '<div class="card-actions">' +
+        '<button class="kimi-icon-button" data-act="edit" aria-label="Edit recipe" title="Edit">✎</button>' +
+        '<button class="kimi-icon-button" data-act="del" aria-label="Delete recipe" title="Delete">×</button>' +
+      '</div>' +
+      '<div class="card-title">' + esc(r.title) + '</div>' +
+      '<div class="card-meta">' + esc(fmtTime(r)) + (fmtTime(r) ? ' · ' : '') + 'serves ' + esc(r.servings) + '</div>' +
+      '<div class="card-tags">' + (r.tags || []).map(t => '<span class="chip-tag">' + esc(t) + '</span>').join('') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ---------- Render: detail ----------
+function renderDetail(id) {
+  const v = document.getElementById('view-detail');
+  if (!v) return;
+  const r = recipeById(id);
+  if (!r) { subView = null; showView('recipes'); return; }
+  const sv = detailServings[id] || r.servings || 1;
+  const f = sv / (r.servings || 1);
+  v.innerHTML =
+    '<div class="toolbar">' +
+      '<button class="kimi-button kimi-button--ghost" data-act="back">← All recipes</button>' +
+      '<div class="spacer"></div>' +
+      '<button class="kimi-button kimi-button--secondary" data-act="edit">Edit</button>' +
+      '<button class="kimi-button kimi-button--secondary" data-act="cookmode">Cook mode</button>' +
+      '<button class="kimi-button kimi-button--primary" data-act="cookthis">' + (cookSel[id] != null ? 'On cook list ✓' : 'Cook this') + '</button>' +
+    '</div>' +
+    '<div class="detail-head"><div>' +
+      '<div class="detail-title">' + esc(r.title) + '</div>' +
+      '<div class="detail-meta">' + esc(fmtTime(r)) + '</div>' +
+      '<div class="card-tags" style="margin-top:6px;">' + (r.tags || []).map(t => '<span class="chip-tag">' + esc(t) + '</span>').join('') + '</div>' +
+    '</div>' +
+    '<div class="stepper" aria-label="Servings"><span class="f-label" style="margin:0;">Servings</span>' +
+      '<button data-act="sv-minus" aria-label="Fewer servings">−</button><span class="val">' + sv + '</span><button data-act="sv-plus" aria-label="More servings">+</button>' +
+    '</div></div>' +
+    '<div class="grid2">' +
+      '<div class="panel"><div class="section-title">Ingredients</div>' +
+        (r.ingredients || []).map(i =>
+          '<div class="ing-row"><span class="ing-qty">' + esc(fmtQty((i.qty || 0) * f)) + ' ' + esc(i.unit || '') + '</span>' +
+          '<span class="ing-name">' + esc(i.name) + (i.notes ? ' <span class="ing-notes">· ' + esc(i.notes) + '</span>' : '') + '</span></div>'
+        ).join('') +
+      '</div>' +
+      '<div class="panel"><div class="section-title">Steps</div>' +
+        (r.steps || []).map((s, i) =>
+          '<div class="step-row"><span class="step-num">' + (i + 1) + '</span><span>' + esc(s) + '</span></div>'
+        ).join('') +
+      '</div>' +
+    '</div>';
+  v.dataset.id = id;
+}
+
+// ---------- Render: editor ----------
+function blankRecipe() {
+  return { id: uid(), title: '', tags: [], prepMin: 15, cookMin: 15, servings: 4,
+    ingredients: [{ qty: 1, unit: 'each', name: '', notes: '', category: 'other', preferredProduct: null }], steps: [''] };
+}
+
+function renderEdit(id) {
+  const v = document.getElementById('view-edit');
+  if (!v) return;
+  const r = id ? JSON.parse(JSON.stringify(recipeById(id))) : blankRecipe();
+  editingId = id || null;
+  window.__draft = r;
+  const unitOpts = u => UNITS.map(x => '<option' + (x === u ? ' selected' : '') + '>' + x + '</option>').join('');
+  const catOpts = c => AISLES.map(x => '<option' + (x === c ? ' selected' : '') + '>' + x + '</option>').join('');
+  v.innerHTML =
+    '<div class="toolbar">' +
+      '<button class="kimi-button kimi-button--ghost" data-act="cancel-edit">Cancel</button>' +
+      '<div class="spacer"></div>' +
+      '<button class="kimi-button kimi-button--primary" data-act="save-edit">' + (id ? 'Save changes' : 'Add recipe') + '</button>' +
+    '</div>' +
+    '<div class="form-grid">' +
+      '<div class="half"><label class="f-label">Title</label><input class="kimi-input" id="f-title" value="' + esc(r.title) + '" placeholder="Recipe name"></div>' +
+      '<div class="half"><label class="f-label">Tags (comma separated)</label><input class="kimi-input" id="f-tags" value="' + esc((r.tags || []).join(', ')) + '" placeholder="weeknight, meal prep"></div>' +
+      '<div><label class="f-label">Prep (min)</label><input class="kimi-input" id="f-prep" type="number" min="0" value="' + esc(r.prepMin) + '"></div>' +
+      '<div><label class="f-label">Cook (min)</label><input class="kimi-input" id="f-cook" type="number" min="0" value="' + esc(r.cookMin) + '"></div>' +
+      '<div><label class="f-label">Base servings</label><input class="kimi-input" id="f-serv" type="number" min="1" value="' + esc(r.servings) + '"></div>' +
+      '<div class="wide"><label class="f-label">Ingredients</label><div id="ingRows">' +
+        r.ingredients.map((i, ix) =>
+          '<div class="edit-ing" data-ix="' + ix + '">' +
+            '<input class="kimi-input f-qty" type="number" step="any" min="0" value="' + esc(i.qty) + '" aria-label="Quantity">' +
+            '<select class="kimi-select f-unit">' + unitOpts(i.unit || 'each') + '</select>' +
+            '<input class="kimi-input f-name" value="' + esc(i.name) + '" placeholder="Ingredient">' +
+            '<input class="kimi-input f-notes opt" value="' + esc(i.notes || '') + '" placeholder="Notes (optional)">' +
+            '<select class="kimi-select f-cat opt">' + catOpts(i.category || 'other') + '</select>' +
+            '<button class="kimi-icon-button" data-act="del-ing" aria-label="Remove ingredient">×</button>' +
+          '</div>').join('') +
+      '</div><button class="kimi-button kimi-button--ghost" data-act="add-ing" style="margin-top:4px;">+ Add ingredient</button></div>' +
+      '<div class="wide"><label class="f-label">Steps (one per line)</label><textarea class="kimi-textarea" id="f-steps" rows="6" placeholder="1. ...">' + esc((r.steps || []).join('\n')) + '</textarea></div>' +
+    '</div>';
+}
+
+function collectDraft() {
+  const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const rows = Array.prototype.slice.call(document.querySelectorAll('#ingRows .edit-ing'));
+  const ings = rows.map(row => ({
+    qty: parseFloat(row.querySelector('.f-qty').value) || 0,
+    unit: row.querySelector('.f-unit').value,
+    name: row.querySelector('.f-name').value.trim(),
+    notes: row.querySelector('.f-notes') ? row.querySelector('.f-notes').value.trim() : '',
+    category: row.querySelector('.f-cat') ? row.querySelector('.f-cat').value : 'other',
+    preferredProduct: null
+  })).filter(i => i.name);
+  return {
+    id: editingId || (window.__draft && window.__draft.id) || uid(),
+    title: g('f-title').trim(),
+    tags: g('f-tags').split(',').map(s => s.trim()).filter(Boolean),
+    prepMin: parseInt(g('f-prep'), 10) || 0,
+    cookMin: parseInt(g('f-cook'), 10) || 0,
+    servings: parseInt(g('f-serv'), 10) || 1,
+    ingredients: ings,
+    steps: g('f-steps').split('\n').map(s => s.trim()).filter(Boolean)
+  };
+}
+
+// ---------- Render: pantry ----------
+function renderPantry() {
+  const el = document.getElementById('pantryList');
+  if (!el) return;
+  el.innerHTML = state.staples.length
+    ? state.staples.map((s, i) =>
+        '<div class="staple-row"><span class="name">' + esc(s) + '</span>' +
+        '<span class="row-actions"><button class="kimi-icon-button" data-act="del-staple" data-ix="' + i + '" aria-label="Remove staple">×</button></span></div>'
+      ).join('')
+    : '<div class="empty">No staples yet. Add the things you always have on hand.</div>';
+}
+
+// ---------- Render: shopping ----------
+function renderShopping() {
+  const v = document.getElementById('view-shopping');
+  if (!v) return;
+  const ids = Object.keys(cookSel).filter(id => recipeById(id));
+  if (!ids.length) {
+    v.innerHTML = '<div class="empty">Nothing on the cook list yet.<br>Open a recipe and hit “Cook this”, or tap + on any recipe card.</div>';
+    return;
+  }
+  const items = mergedItems();
+  const groups = AISLES.map(a => ({ aisle: a, items: items.filter(i => (AISLES.indexOf(i.category) === -1 ? 'other' : i.category) === a) })).filter(g => g.items.length);
+  const checkedCount = items.filter(it => shopChecks[shopKey(it)] !== false && !defaultUnchecked(it)).length;
+
+  function defaultUnchecked(it) { return it.is_staple && shopChecks[shopKey(it)] === undefined; }
+
+  v.innerHTML =
+    '<div class="section-title">Cooking (' + ids.length + ')</div>' +
+    ids.map(id => {
+      const r = recipeById(id);
+      return '<div class="cook-src"><span class="name">' + esc(r.title) + '</span>' +
+        '<span class="stepper"><button data-act="csv-minus" data-id="' + esc(id) + '" aria-label="Fewer servings">−</button>' +
+        '<span class="val">' + esc(cookSel[id]) + '</span>' +
+        '<button data-act="csv-plus" data-id="' + esc(id) + '" aria-label="More servings">+</button></span>' +
+        '<span class="row-actions" style="opacity:1;"><button class="kimi-icon-button" data-act="rm-cook" data-id="' + esc(id) + '" aria-label="Remove from cook list">×</button></span></div>';
+    }).join('') +
+    '<div class="section-title" style="margin-top:var(--kimi-space-4);">Shopping list (' + items.length + ' items)</div>' +
+    groups.map(g =>
+      '<div class="aisle"><div class="aisle-title">' + esc(g.aisle) + '</div>' +
+      g.items.map(it => {
+        const k = shopKey(it);
+        const checked = shopChecks[k] !== undefined ? shopChecks[k] : !it.is_staple;
+        return '<div class="shop-row' + (checked ? '' : ' unchecked') + '">' +
+          '<input type="checkbox" data-act="check" data-k="' + esc(k) + '"' + (checked ? ' checked' : '') + ' aria-label="' + esc(it.ingredient) + '">' +
+          '<span class="shop-qty">' + esc(fmtQty(it.quantity)) + ' ' + esc(it.unit) + '</span>' +
+          '<span class="shop-name">' + esc(it.ingredient) + (it.notes ? ' <span class="ing-notes">· ' + esc(it.notes) + '</span>' : '') + '</span>' +
+          (it.is_staple ? '<span class="staple-mark">staple</span>' : '') +
+        '</div>';
+      }).join('') + '</div>'
+    ).join('') +
+    '<div class="btn-row">' +
+      '<button class="kimi-button kimi-button--primary" data-act="export-shop">Export shopping list JSON</button>' +
+      '<button class="kimi-button kimi-button--ghost" data-act="clear-cook">Clear cook list</button>' +
+    '</div>' +
+    '<div class="hint">Ticked items (' + checkedCount + ') go into the export. Then say: “Run H-E-B cart agent with this shopping list” and attach the downloaded file — the agent stops at your cart for review and never checks out.</div>' +
+    (shopJson ? '<div class="json-preview" id="shopJsonView">' + esc(shopJson) + '</div>' : '');
+}
+
+// ---------- Cook mode ----------
+let cookSteps = [], cookIx = 0, cookTitle = '';
+function openCookMode(id) {
+  const r = recipeById(id); if (!r || !(r.steps || []).length) return;
+  cookSteps = r.steps; cookIx = 0; cookTitle = r.title;
+  const ov = document.getElementById('cookOverlay');
+  if (ov) ov.hidden = false;
+  renderCookStep();
+  try { if (navigator.wakeLock && navigator.wakeLock.request) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {}
+}
+function renderCookStep() {
+  const ov = document.getElementById('cookOverlay');
+  if (!ov || ov.hidden) return;
+  ov.innerHTML =
+    '<div class="cook-top"><span class="cook-title">' + esc(cookTitle) + '</span>' +
+    '<button class="kimi-button kimi-button--ghost" data-act="exit-cook">Exit</button></div>' +
+    '<div class="cook-body">' +
+      '<div class="cook-step-num">Step ' + (cookIx + 1) + ' of ' + cookSteps.length + '</div>' +
+      '<div class="cook-step-text">' + esc(cookSteps[cookIx]) + '</div>' +
+      '<div class="cook-nav">' +
+        '<button class="kimi-button kimi-button--secondary" data-act="cook-prev"' + (cookIx === 0 ? ' disabled' : '') + '>Back</button>' +
+        (cookIx < cookSteps.length - 1
+          ? '<button class="kimi-button kimi-button--primary" data-act="cook-next">Next step</button>'
+          : '<button class="kimi-button kimi-button--primary" data-act="exit-cook">Done</button>') +
+      '</div>' +
+    '</div>' +
+    '<div class="cook-progress"><div style="width:' + Math.round(((cookIx + 1) / cookSteps.length) * 100) + '%"></div></div>';
+}
+
+// ---------- View switching ----------
+function showView(name) {
+  ['recipes', 'detail', 'edit', 'pantry', 'shopping'].forEach(n => {
+    const el = document.getElementById('view-' + n);
+    if (el) el.classList.toggle('active', n === name);
+  });
+  document.querySelectorAll('.tab').forEach(t => {
+    const tv = t.getAttribute('data-view');
+    t.classList.toggle('is-selected', tv === activeTab && (name === tv || (activeTab === 'recipes' && (name === 'detail' || name === 'edit'))));
+    t.setAttribute('aria-selected', t.classList.contains('is-selected') ? 'true' : 'false');
+  });
+}
+
+function renderAll() {
+  renderStats(); renderRecipes(); renderPantry(); renderShopping();
+  if (subView && subView.kind === 'detail') renderDetail(subView.id);
+}
+
+// ---------- Export / import ----------
+function buildShoppingJson() {
+  const items = mergedItems().filter(it => {
+    const k = shopKey(it);
+    return shopChecks[k] !== undefined ? shopChecks[k] : !it.is_staple;
+  });
+  const ids = Object.keys(cookSel).filter(id => recipeById(id));
+  return {
+    recipes: ids.map(id => recipeById(id).title),
+    servings: ids.length === 1 ? cookSel[ids[0]] : null,
+    items: items.map(it => ({ ingredient: it.ingredient, quantity: it.quantity, unit: it.unit, notes: it.notes, category: it.category, is_staple: it.is_staple, preferred_product: it.preferred_product }))
+  };
+}
+
+function dateStamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+// Immediate native download: the browser saves straight to the Downloads folder.
+function browserDownload(text, filename, mime) {
+  try {
+    const blob = new Blob([text], { type: mime || 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+    return true;
+  } catch (e) { return false; }
+}
+
+async function downloadJson(obj, filename, mime) {
+  const text = JSON.stringify(obj, null, 2);
+  if (browserDownload(text, filename, mime)) {
+    setSaveStatus('Downloaded ' + filename + ' — check your Downloads folder');
+    return text;
+  }
+  if (host && host.files && typeof host.files.write === 'function' && typeof host.files.download === 'function') {
+    try {
+      const ref = await host.files.write({ name: filename, mimeType: mime || 'application/json', data: { encoding: 'utf8', text: text } });
+      const res = await host.files.download(ref, { suggestedFilename: filename });
+      if (res && res.cancelled) setSaveStatus('Download cancelled', 'error');
+      else setSaveStatus('Saved ' + filename);
+      return text;
+    } catch (e) {
+      setSaveStatus('Download failed — JSON shown below instead', 'error');
+    }
+  } else {
+    setSaveStatus('Direct download unavailable — copy the JSON below', 'error');
+  }
+  return text; // shown in the preview block instead
+}
+
+async function exportBackup() {
+  const payload = { recipes: state.recipes, staples: state.staples, exportedAt: new Date().toISOString() };
+  await downloadJson(payload, 'recipe-book-backup-' + dateStamp() + '.json');
+}
+
+async function importBackup() {
+  if (!(canFiles && typeof host.files.pick === 'function')) return;
+  try {
+    const picked = await host.files.pick({ accept: ['.json', 'application/json'], multiple: false });
+    if (!picked || !picked.length) return;
+    const text = await host.files.readText(picked[0], { maxBytes: 5 * 1024 * 1024 });
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.recipes)) { setSaveStatus('Import failed — not a recipe book file', 'error'); return; }
+    if (!window.confirm('Replace your current book with the imported file? This overwrites ' + state.recipes.length + ' recipes.')) return;
+    state.recipes = data.recipes.map(r => ({
+      id: r.id || uid(), title: String(r.title || 'Untitled'), tags: Array.isArray(r.tags) ? r.tags : [],
+      prepMin: r.prepMin || 0, cookMin: r.cookMin || 0, servings: r.servings || 1,
+      ingredients: Array.isArray(r.ingredients) ? r.ingredients : [], steps: Array.isArray(r.steps) ? r.steps : []
+    }));
+    if (Array.isArray(data.staples)) state.staples = data.staples.map(String);
+    cookSel = {}; pushCookList(); shopChecks = {};
+    renderAll(); markDirty();
+  } catch (e) { setSaveStatus('Import failed', 'error'); }
+}
+
+// ---------- Inline delete confirmation (window.confirm is blocked in the sandbox) ----------
+function removeDeleteConfirm() {
+  document.querySelectorAll('.confirm-bar').forEach(el => el.remove());
+}
+function showDeleteConfirm(cardEl, r) {
+  if (!cardEl || !r) return;
+  removeDeleteConfirm();
+  const bar = document.createElement('div');
+  bar.className = 'confirm-bar';
+  bar.innerHTML = '<span class="confirm-text">Delete “' + esc(r.title) + '”?</span>' +
+    '<button class="kimi-button kimi-button--secondary" data-act="cancel-del">Cancel</button>' +
+    '<button class="kimi-button kimi-button--primary" data-act="confirm-del" data-id="' + esc(r.id) + '">Delete</button>';
+  cardEl.appendChild(bar);
+}
+
+// ---------- Events ----------
+function bindEvents() {
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    activeTab = t.getAttribute('data-view');
+    subView = null;
+    showView(activeTab === 'recipes' ? 'recipes' : activeTab);
+    renderAll();
+  }));
+
+  const si = document.getElementById('searchInput');
+  if (si) si.addEventListener('input', () => { query = si.value; renderRecipes(); });
+  const tf = document.getElementById('tagFilter');
+  if (tf) tf.addEventListener('change', () => { tagFilter = tf.value; renderRecipes(); });
+  const nb = document.getElementById('newRecipeBtn');
+  if (nb) nb.addEventListener('click', () => { subView = { kind: 'edit' }; renderEdit(null); showView('edit'); });
+  const ib = document.getElementById('importBtn');
+  if (ib) ib.addEventListener('click', importBackup);
+  const eb = document.getElementById('exportBtn');
+  if (eb) eb.addEventListener('click', exportBackup);
+  const as = document.getElementById('addStapleBtn');
+  const sIn = document.getElementById('stapleInput');
+  const addStaple = () => {
+    const v = (sIn.value || '').trim().toLowerCase();
+    if (v && state.staples.indexOf(v) === -1) { state.staples.push(v); sIn.value = ''; renderStats(); renderPantry(); markDirty(); }
+  };
+  if (as) as.addEventListener('click', addStaple);
+  if (sIn) sIn.addEventListener('keydown', e => { if (e.key === 'Enter') addStaple(); });
+
+  document.getElementById('app').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) {
+      if (e.target.closest('.confirm-bar')) return;
+      const card = e.target.closest('.card');
+      if (card) { subView = { kind: 'detail', id: card.dataset.id }; renderDetail(card.dataset.id); showView('detail'); }
+      return;
+    }
+    e.stopPropagation();
+    const act = btn.dataset.act;
+    const card = btn.closest('.card');
+    const id = card ? card.dataset.id : (btn.dataset.id || (subView && subView.id));
+
+    if (act === 'togglecook') {
+      if (cookSel[id] != null) delete cookSel[id];
+      else { const r = recipeById(id); cookSel[id] = (r && r.servings) || 1; }
+      pushCookList(); renderStats(); renderRecipes(); renderShopping(); markDirty();
+    } else if (act === 'edit') {
+      subView = { kind: 'edit', id: id }; renderEdit(id); showView('edit');
+    } else if (act === 'del') {
+      const r = recipeById(id);
+      if (r) showDeleteConfirm(card, r);
+    } else if (act === 'confirm-del') {
+      const rid = btn.dataset.id || id;
+      removeDeleteConfirm();
+      state.recipes = state.recipes.filter(x => x.id !== rid);
+      delete cookSel[rid]; pushCookList();
+      if (subView && subView.id === rid) subView = null;
+      renderAll(); markDirty();
+    } else if (act === 'cancel-del') {
+      removeDeleteConfirm();
+    } else if (act === 'back') { subView = null; showView('recipes'); renderRecipes(); }
+    else if (act === 'cookthis') {
+      if (cookSel[id] == null) { const r = recipeById(id); cookSel[id] = detailServings[id] || (r && r.servings) || 1; }
+      else delete cookSel[id];
+      pushCookList(); renderStats(); renderDetail(id); renderShopping(); markDirty();
+    } else if (act === 'cookmode') { openCookMode(id); }
+    else if (act === 'sv-minus' || act === 'sv-plus') {
+      const r = recipeById(id); if (!r) return;
+      const cur = detailServings[id] || r.servings || 1;
+      detailServings[id] = Math.max(1, cur + (act === 'sv-plus' ? 1 : -1));
+      renderDetail(id);
+    } else if (act === 'cancel-edit') { subView = null; showView('recipes'); renderRecipes(); }
+    else if (act === 'save-edit') {
+      const d = collectDraft();
+      if (!d.title) { document.getElementById('f-title').focus(); return; }
+      const ix = state.recipes.findIndex(x => x.id === d.id);
+      if (ix !== -1) state.recipes[ix] = d; else state.recipes.push(d);
+      subView = null; showView('recipes'); renderAll(); markDirty();
+    } else if (act === 'add-ing') {
+      const rows = document.getElementById('ingRows');
+      if (!rows) return;
+      const div = document.createElement('div');
+      div.className = 'edit-ing';
+      div.innerHTML = '<input class="kimi-input f-qty" type="number" step="any" min="0" value="1" aria-label="Quantity">' +
+        '<select class="kimi-select f-unit">' + UNITS.map(x => '<option>' + x + '</option>').join('') + '</select>' +
+        '<input class="kimi-input f-name" placeholder="Ingredient">' +
+        '<input class="kimi-input f-notes opt" placeholder="Notes (optional)">' +
+        '<select class="kimi-select f-cat opt">' + AISLES.map(x => '<option>' + x + '</option>').join('') + '</select>' +
+        '<button class="kimi-icon-button" data-act="del-ing" aria-label="Remove ingredient">×</button>';
+      rows.appendChild(div);
+      div.querySelector('.f-name').focus();
+    } else if (act === 'del-ing') {
+      const row = btn.closest('.edit-ing'); if (row) row.remove();
+    } else if (act === 'del-staple') {
+      state.staples.splice(parseInt(btn.dataset.ix, 10), 1);
+      renderStats(); renderPantry(); markDirty();
+    } else if (act === 'csv-minus' || act === 'csv-plus') {
+      cookSel[id] = Math.max(1, (cookSel[id] || 1) + (act === 'csv-plus' ? 1 : -1));
+      pushCookList(); renderShopping(); markDirty();
+    } else if (act === 'rm-cook') {
+      delete cookSel[id]; pushCookList(); renderStats(); renderRecipes(); renderShopping(); markDirty();
+    } else if (act === 'clear-cook') {
+      cookSel = {}; pushCookList(); shopChecks = {}; shopJson = '';
+      renderStats(); renderRecipes(); renderShopping(); markDirty();
+    } else if (act === 'export-shop') {
+      const payload = buildShoppingJson();
+      payload.exportedAt = new Date().toISOString();
+      downloadJson(payload, 'heb-shopping-list-' + dateStamp() + '.json').then(text => { shopJson = text; renderShopping(); });
+    }
+  });
+
+  document.getElementById('app').addEventListener('change', e => {
+    const cb = e.target.closest('input[type="checkbox"][data-act="check"]');
+    if (cb) {
+      shopChecks[cb.dataset.k] = cb.checked;
+      const row = cb.closest('.shop-row');
+      if (row) row.classList.toggle('unchecked', !cb.checked);
+    }
+  });
+
+  const ov = document.getElementById('cookOverlay');
+  if (ov) ov.addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === 'exit-cook') { ov.hidden = true; }
+    else if (act === 'cook-prev') { cookIx = Math.max(0, cookIx - 1); renderCookStep(); }
+    else if (act === 'cook-next') { cookIx = Math.min(cookSteps.length - 1, cookIx + 1); renderCookStep(); }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (ov && !ov.hidden) {
+      if (e.key === 'ArrowRight') { cookIx = Math.min(cookSteps.length - 1, cookIx + 1); renderCookStep(); }
+      else if (e.key === 'ArrowLeft') { cookIx = Math.max(0, cookIx - 1); renderCookStep(); }
+      else if (e.key === 'Escape') { ov.hidden = true; }
+    }
+  });
+}
+
+// ---------- Boot ----------
+function init() {
+  syncCookSel();
+  bindEvents();
+  renderAll();
+  showView('recipes');
+  if (!canEmit) setSaveStatus('Local only');
+  if (host && typeof host.onDataChange === 'function') {
+    host.onDataChange(d => adoptIncoming(d && d.main));
+  } else {
+    adoptIncoming(null);
+  }
+  if (host && typeof host.onStatusChange === 'function') {
+    host.onStatusChange(() => {
+      if (host.status === 'error') setSaveStatus('Save failed — will retry', 'error');
+      else if (host.status === 'idle' && dirty) persist();
+    });
+  }
+}
+
+try {
+  if (typeof document !== 'undefined' && typeof document.getElementById === 'function' && document.getElementById('app')) {
+    init();
+  }
+} catch (e) { /* smoke host: stay silent */ }
+})();
+</script>
+</body>
+</html>
