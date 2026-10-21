@@ -1,5 +1,7 @@
 # Recipe Book
 
+**▶ Live demo: https://j0selu1gi.github.io/Smart-Recipe-Book/**
+
 A personal recipe book that lives as a single HTML file. Browse your recipes, scale
 servings up or down, cook step-by-step with a checklist, keep a list of pantry
 staples, and build a shopping list — every change is saved automatically.
